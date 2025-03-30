@@ -1,9 +1,29 @@
-version: '3.8'
-
 services:
-  santa:
+  db:
+    image: postgres:13
+    environment:
+      POSTGRES_USER: santa
+      POSTGRES_PASSWORD: secret
+      POSTGRES_DB: santadb
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U santa -d santadb"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  app:
     build: .
+    environment:
+      DATABASE_URL: "postgresql://santa:secret@db:5432/santadb"
     ports:
       - "8080:8080"
-    volumes:
-      - ./santa.db:/app/santa.db
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  postgres_data:
